@@ -1,0 +1,46 @@
+version: '3.7'
+services:
+  # Database. Cannot access via 3306 but phpmyadmin can pass
+  db:
+    image: mariadb
+    restart: unless-stopped
+    volumes:
+      - ./app/db/data:/var/lib/mysql
+    env_file: 
+      ./app/db/db.env
+
+  php-fpm:
+    build: ./app/php
+    restart: unless-stopped
+    # Same dir as nginx
+    volumes:
+      - ./src/:/var/www/html
+
+  # PHPMyAdmin for manage database
+  sqlAdmin:
+    image: phpmyadmin/phpmyadmin
+    restart: unless-stopped
+    links:
+      - db
+    ports:
+      - 81:80
+    # same as mariadb environment for access
+    env_file: 
+      ./app/db/db.env
+    depends_on: 
+      - db
+
+  app:
+    image: nginx
+    restart: unless-stopped
+    volumes:
+      - ./src:/var/www/html
+      - ./app/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - 80:80
+      - 443:443
+    links:
+      - php-fpm
+      - db
+    depends_on: 
+      - php-fpm
