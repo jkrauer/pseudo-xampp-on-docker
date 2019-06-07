@@ -5,9 +5,12 @@ services:
     image: mariadb
     restart: unless-stopped
     volumes:
-      - ./app/db/data:/var/lib/mysql
-    env_file: 
-      ./app/db/db.env
+      - db:/var/lib/mysql
+    env_file:
+      - ./app/db/db.env
+    # If you wish to access through outside just uncomment the section below
+    # ports:
+    #   - 3306:3306
 
   php-fpm:
     build: ./app/php
@@ -20,27 +23,24 @@ services:
   sqlAdmin:
     image: phpmyadmin/phpmyadmin
     restart: unless-stopped
-    links:
-      - db
+    # localhost:81
     ports:
       - 81:80
     # same as mariadb environment for access
     env_file: 
       ./app/db/db.env
-    depends_on: 
-      - db
+    # custom connection to db
+    environment:
+      PMA_HOST: db
 
   app:
     image: nginx
     restart: unless-stopped
     volumes:
       - ./src:/var/www/html
-      - ./app/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./app/nginx/conf.d:/etc/nginx/conf.d
     ports:
       - 80:80
       - 443:443
-    links:
-      - php-fpm
-      - db
-    depends_on: 
-      - php-fpm
+volumes:
+  db:
